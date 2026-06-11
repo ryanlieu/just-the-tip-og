@@ -1,4 +1,4 @@
-# OG, Just the tip! — Game Spec
+# OG TIP IN — Game Spec
 
 A single-file browser game recreating OG Anunoby's game-winning tip-in for the Knicks in Game 4 of the 2026 NBA Finals. Plays like an old-school Flash game, drawn like MS Paint.
 
@@ -62,7 +62,7 @@ One fixed, hand-tuned difficulty (no levels, no progression, nothing persisted):
 
 ## 8. Game States
 
-1. **Title screen** — MS Paint title card: wobbly hand-drawn "OG, Just the tip!" logo, OG sprite, "PRESS SPACE TO START", and a 2-line how-to-play (←→/AD run · SPACE/W jumps · tip the ball in).
+1. **Title screen** — MS Paint title card: wobbly hand-drawn "OG TIP IN" logo, OG sprite, "PRESS SPACE TO START", and a 2-line how-to-play (←→/AD run · SPACE/W jumps · tip the ball in).
 2. **Playing** — HUD top-left: a little MS Paint basketball with the current attempt number. Scoreboard strip: NYK 105 – SAS 106, "Q4 0:00.5".
 3. **Try resolution** — announcer text pop (see §9), short pause, reset.
 4. **Winning make → slow-mo replay** — the last ~1.2s of ball + players replays at 0.3× speed (replay buffer of recent frame states), white "INSTANT REPLAY" text flickering in the corner, then →
