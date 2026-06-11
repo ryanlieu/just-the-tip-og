@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>OG, Just the tip!</title>
 <style>
   html,body{margin:0;padding:0;background:#222;height:100%;overflow:hidden;}
   body{display:flex;align-items:center;justify-content:center;}
-  canvas{image-rendering:pixelated;background:#9aa3b8;}
+  canvas{image-rendering:pixelated;background:#9aa3b8;touch-action:none;}
 </style>
 </head>
 <body>
@@ -54,8 +55,12 @@ const P = {
 // ===== Audio (all synthesized) =====
 let AC = null, murmurOn = false;
 function audioInit(){
-  if (AC) return;
+  if (AC){
+    if (AC.state === 'suspended') AC.resume(); // iOS unlock
+    return;
+  }
   try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+  if (AC && AC.state === 'suspended') AC.resume();
   startMurmur();
 }
 function tone(freq, dur, type, vol, slide){
@@ -182,21 +187,59 @@ function makeShot(){
 }
 
 // ===== Input =====
+function pressJump(){
+  audioInit();
+  if (state === 'title' || state === 'victory'){ startGame(); }
+  else if (state === 'play' || state === 'resolve'){
+    if (!og.air && og.stun <= 0){ og.vy = -950; og.air = true; sBoing(); }
+  }
+}
+
 const KEYMAP = {KeyA:'ArrowLeft', KeyD:'ArrowRight', KeyW:'ArrowUp', KeyS:'ArrowDown'}; // WASD aliases
 window.addEventListener('keydown', e=>{
   const c = KEYMAP[e.code] || e.code;
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(c)) e.preventDefault();
   keys[c] = true;
-  if (c === 'Space' || c === 'ArrowUp'){
-    audioInit();
-    if (state === 'title'){ startGame(); }
-    else if (state === 'play' || state === 'resolve'){
-      if (!og.air && og.stun <= 0){ og.vy = -950; og.air = true; sBoing(); }
-    }
-    else if (state === 'victory' && c === 'Space'){ startGame(); }
-  }
+  if (c === 'Space' || c === 'ArrowUp') pressJump();
 });
 window.addEventListener('keyup', e=>{ keys[KEYMAP[e.code] || e.code] = false; });
+
+// ---- touch controls (mobile) ----
+let TOUCH = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+const BTN = {
+  left:  {x:70,  y:552, r:38, label:'◀'},
+  right: {x:172, y:552, r:38, label:'▶'},
+  jump:  {x:884, y:548, r:46, label:'▲'}
+};
+const touchHeld = {left:false, right:false};
+function touchXY(t){
+  const r = cv.getBoundingClientRect();
+  return {x:(t.clientX-r.left)*W/r.width, y:(t.clientY-r.top)*H/r.height};
+}
+function inBtn(p, b){
+  const dx = p.x-b.x, dy = p.y-b.y, rr = b.r*1.5; // forgiving hit area
+  return dx*dx + dy*dy < rr*rr;
+}
+function recomputeHolds(e){
+  touchHeld.left = false; touchHeld.right = false;
+  for (const t of e.touches){
+    const p = touchXY(t);
+    if (inBtn(p, BTN.left)) touchHeld.left = true;
+    else if (inBtn(p, BTN.right)) touchHeld.right = true;
+  }
+}
+cv.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  TOUCH = true;
+  if (state === 'title' || state === 'victory'){ pressJump(); return; }
+  for (const t of e.changedTouches){
+    if (inBtn(touchXY(t), BTN.jump)) pressJump();
+  }
+  recomputeHolds(e);
+}, {passive:false});
+cv.addEventListener('touchmove', e=>{ e.preventDefault(); recomputeHolds(e); }, {passive:false});
+cv.addEventListener('touchend', e=>{ e.preventDefault(); recomputeHolds(e); }, {passive:false});
+cv.addEventListener('touchcancel', e=>{ recomputeHolds(e); });
 
 // ===== Update =====
 function predictLandX(b){
@@ -232,12 +275,14 @@ function update(dt){
 
   // --- OG ---
   og.stun = Math.max(0, og.stun - dt);
+  const inL = keys['ArrowLeft'] || touchHeld.left;
+  const inR = keys['ArrowRight'] || touchHeld.right;
   if (og.stun <= 0 && (state === 'play' || state === 'resolve' || state === 'winpose')){
     const ax = 2600;
-    if (keys['ArrowLeft'])  { og.vx -= ax*dt; og.facing = -1; }
-    if (keys['ArrowRight']) { og.vx += ax*dt; og.facing = 1; }
+    if (inL){ og.vx -= ax*dt; og.facing = -1; }
+    if (inR){ og.vx += ax*dt; og.facing = 1; }
   }
-  if (!keys['ArrowLeft'] && !keys['ArrowRight']) og.vx *= Math.pow(0.0001, dt);
+  if (!inL && !inR) og.vx *= Math.pow(0.0001, dt);
   og.vx = Math.max(-480, Math.min(480, og.vx));
   og.x += og.vx*dt;
   og.x = Math.max(20, Math.min(852, og.x));
@@ -683,9 +728,15 @@ function draw(){
     wobblyText('OG, Just the tip!', W/2, 130, 72, '#ff7a1a', -0.03);
     wobblyText('2026 NBA FINALS — GAME 4', W/2, 195, 24, '#1d62b8', 0.02);
     ctx.font = 'bold 19px "Comic Sans MS", cursive'; ctx.textAlign='center'; ctx.fillStyle = '#222';
-    ctx.fillText('← → / A D  run in from half court', W/2, 340);
-    ctx.fillText('SPACE / W  jump — touch the ball near the rim to tip it in', W/2, 374);
-    if (Math.floor(t*2)%2===0) wobblyText('PRESS SPACE TO START', W/2, 480, 34, '#d22', 0);
+    if (TOUCH){
+      ctx.fillText('hold ◀ ▶  to run in from half court', W/2, 340);
+      ctx.fillText('tap ▲  to jump — touch the ball near the rim to tip it in', W/2, 374);
+      if (Math.floor(t*2)%2===0) wobblyText('TAP TO START', W/2, 480, 34, '#d22', 0);
+    } else {
+      ctx.fillText('← → / A D  run in from half court', W/2, 340);
+      ctx.fillText('SPACE / W  jump — touch the ball near the rim to tip it in', W/2, 374);
+      if (Math.floor(t*2)%2===0) wobblyText('PRESS SPACE TO START', W/2, 480, 34, '#d22', 0);
+    }
     return;
   }
 
@@ -711,7 +762,7 @@ function draw(){
     wobblyText('KNICKS WIN GAME 4', W/2, 200, 64, '#ff7a1a', -0.02);
     wobblyText('OG WITH THE TIP!!', W/2, 270, 34, '#1d62b8', 0.02);
     wobblyText('it took ' + triesUsed + (triesUsed===1?' attempt':' attempts'), W/2, 330, 24, '#33363d', 0);
-    if (Math.floor(t*2)%2===0) wobblyText('PRESS SPACE TO RUN IT BACK', W/2, 460, 26, '#d22', 0);
+    if (Math.floor(t*2)%2===0) wobblyText(TOUCH ? 'TAP TO RUN IT BACK' : 'PRESS SPACE TO RUN IT BACK', W/2, 460, 26, '#d22', 0);
     return;
   }
 
@@ -720,6 +771,22 @@ function draw(){
   drawScoreboard(false);
   drawHUD();
   drawPops();
+  if (TOUCH) drawTouchButtons();
+}
+
+function drawTouchButtons(){
+  for (const k of ['left','right','jump']){
+    const b = BTN[k];
+    const held = (k==='left' && touchHeld.left) || (k==='right' && touchHeld.right);
+    ctx.globalAlpha = held ? 0.55 : 0.28;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#222'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#222'; ctx.font = 'bold 30px "Comic Sans MS", cursive';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, b.x, b.y+2);
+  }
+  ctx.globalAlpha = 1;
 }
 
 // ===== Main loop (fixed timestep) =====

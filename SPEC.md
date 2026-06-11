@@ -33,6 +33,7 @@ Side view of the right half of the court. Basket on the **right** edge: gray bac
 | ↑ or W | Jump (alias) |
 | Space | Jump |
 | Space (menus) | Start / play again |
+| Touch (mobile) | Hold on-screen ◀ ▶ to run, tap ▲ to jump, tap anywhere on menus |
 
 - OG runs fast (he's sprinting in from half court) with slight acceleration/skid.
 - One jump per airborne arc, fixed jump impulse, normal gravity. While airborne his arm is fully extended overhead — his **hand hitbox** is a small circle at the fingertip, and it's the only thing that can tip the ball.
@@ -90,4 +91,4 @@ og_tip_in/
 
 ## 12. Out of Scope (v1)
 
-Mobile/touch controls, online leaderboards, multiple playable characters, real NBA assets/likeness art (everything stays crude on purpose).
+Online leaderboards, multiple playable characters, real NBA assets/likeness art (everything stays crude on purpose).
