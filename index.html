@@ -264,7 +264,8 @@ function update(dt){
     return;
   }
   if (state === 'replay'){
-    replayIdx += 0.32;
+    // full speed through the runback, then slow-mo for the final second (the tip)
+    replayIdx += (replayBuf.length - replayIdx > 110) ? 1.0 : 0.3;
     if (replayIdx >= replayBuf.length - 1){
       state = 'victory';
       confetti = [];
@@ -433,7 +434,7 @@ function update(dt){
   // record replay frames during live play + winpose
   if (state === 'play' || state === 'winpose'){
     replayBuf.push({bx:ball.x, by:ball.y, made:ball.made, ox:og.x, oy:og.y, oa:og.air, of:og.facing, ph:og.phase, wx:wemby.x, wy:wemby.y, ds:sticks.map(s=>s.x)});
-    if (replayBuf.length > 120) replayBuf.shift();
+    if (replayBuf.length > 300) replayBuf.shift();
   }
 
   if (state === 'winpose'){

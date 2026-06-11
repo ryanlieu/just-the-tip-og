@@ -65,7 +65,7 @@ One fixed, hand-tuned difficulty (no levels, no progression, nothing persisted):
 1. **Title screen** — MS Paint title card: wobbly hand-drawn "OG TIP IN" logo, OG sprite, "PRESS SPACE TO START", and a 2-line how-to-play (←→/AD run · SPACE/W jumps · tip the ball in).
 2. **Playing** — HUD top-left: a little MS Paint basketball with the current attempt number. Scoreboard strip: NYK 105 – SAS 106, "Q4 0:00.5".
 3. **Try resolution** — announcer text pop (see §9), short pause, reset.
-4. **Winning make → slow-mo replay** — the last ~1.2s of ball + players replays at 0.3× speed (replay buffer of recent frame states), white "INSTANT REPLAY" text flickering in the corner, then →
+4. **Winning make → instant replay** — the last ~2.5s of ball + players replays from a frame-state buffer: the runback plays at full speed, then the final second (the tip itself) drops to 0.3× slow-mo. "INSTANT REPLAY" text flickers in the corner, then →
 5. **Victory screen** — confetti rectangles, scoreboard flips to NYK 107 – SAS 106, giant **"KNICKS WIN GAME 4"**, attempts used, "PRESS SPACE TO RUN IT BACK".
 
 ## 9. Announcer Text
